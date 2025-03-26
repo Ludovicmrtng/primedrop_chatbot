@@ -7,6 +7,7 @@ from threading import Thread
 import pdfplumber
 import pandas as pd
 from twilio.rest import Client
+import base64, json
 
 # === Configuration ===
 SERVICE_ACCOUNT_FILE = 'service_account.json'
@@ -16,16 +17,18 @@ LOCAL_FILENAME = 'latest_manifest.pdf'
 DRIVER_EXCEL_PATH = 'driver_info.xlsx'
 
 # Twilio credentials
-TWILIO_ACCOUNT_SID = 'your_twilio_account_sid'
-TWILIO_AUTH_TOKEN = 'your_twilio_auth_token'
-TWILIO_WHATSAPP_NUMBER = 'whatsapp:+14155238886'
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_NUMBER = 'whatsapp:+15188967631'
 
 app = Flask(__name__)
 
 # === Google Drive Service Setup ===
 def get_drive_service():
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+    encoded_creds = os.getenv('GOOGLE_SERVICE_ACCOUNT')
+    creds_json = json.loads(base64.b64decode(encoded_creds))
+    credentials = service_account.Credentials.from_service_account_info(
+        creds_json,
         scopes=['https://www.googleapis.com/auth/drive']
     )
     return build('drive', 'v3', credentials=credentials)
@@ -150,7 +153,7 @@ def monitor_folder(service):
                             message = (f"Your order {s.get('barcode', 'N/A')} is ready for delivery at {s['address']} "
                                        f"with the driver {driver_name}. Please keep this amount mention Rs {s['cod']} ready. "
                                        "If paid, please send screenshot. Thank you!")
-                            send_whatsapp_message(s['phone'], message)
+                            send_whatsapp_message('59873273', message)
                     else:
                         print(f"❌ Driver '{driver_name}' not found in Excel.")
                     last_processed_id = file_id
